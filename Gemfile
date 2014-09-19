@@ -6,8 +6,6 @@ gemspec
 group :db do
   # Needed for Msf::DbManager
   gem 'activerecord', '>= 3.0.0', '< 4.0.0'
-  # Metasploit::Concern hooks
-  gem 'metasploit-concern', '~> 0.1.1'
   # Metasploit::Credential database models
   gem 'metasploit-credential', '>= 0.9.0'
   # Database models shared between framework and Pro.
@@ -61,4 +59,14 @@ group :test do
   gem 'simplecov', '0.5.4', :require => false
   # Manipulate Time.now in specs
   gem 'timecop'
+end
+
+
+# Metasploit::Concern hooks
+gem 'metasploit-concern', '~> 0.1.1'
+
+platforms :jruby do
+  gem 'msgpack-jruby', '>= 1.4.0', :require => 'msgpack'
+  gem 'activerecord-jdbcsqlite3-adapter', :require => 'jdbc-sqlite3', :require =>'arjdbc'
+  gem 'pg_jruby', '>= 0.14.1.rc2.java'
 end

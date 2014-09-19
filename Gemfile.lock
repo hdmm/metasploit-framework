@@ -8,14 +8,12 @@ PATH
       json
       metasploit-model (~> 0.26.1)
       meterpreter_bins (= 0.0.7)
-      msgpack
       nokogiri
       packetfu (= 1.1.9)
       railties
       rkelly-remix (= 0.0.6)
       robots
       rubyzip (~> 1.1)
-      sqlite3
       tzinfo
 
 GEM
@@ -42,6 +40,14 @@ GEM
       activesupport (= 3.2.19)
       arel (~> 3.0.2)
       tzinfo (~> 0.3.29)
+    activerecord-jdbc-adapter (1.3.10)
+      activerecord (>= 2.2)
+    activerecord-jdbcpostgresql-adapter (1.3.10)
+      activerecord-jdbc-adapter (~> 1.3.10)
+      jdbc-postgres (>= 9.1)
+    activerecord-jdbcsqlite3-adapter (1.3.10)
+      activerecord-jdbc-adapter (~> 1.3.10)
+      jdbc-sqlite3 (~> 3.7.2)
     activeresource (3.2.19)
       activemodel (= 3.2.19)
       activesupport (= 3.2.19)
@@ -56,6 +62,7 @@ GEM
       cucumber (>= 1.1.1)
       rspec-expectations (>= 2.7.0)
     bcrypt (3.1.7)
+    bcrypt (3.1.7-java)
     builder (3.0.4)
     capybara (2.4.1)
       mime-types (>= 1.16)
@@ -84,13 +91,20 @@ GEM
       factory_girl (~> 4.4.0)
       railties (>= 3.0.0)
     ffi (1.9.3)
+    ffi (1.9.3-java)
     fivemat (1.2.1)
     gherkin (2.11.6)
       json (>= 1.7.6)
+    gherkin (2.11.6-java)
+      json (>= 1.7.6)
     hike (1.2.3)
     i18n (0.6.11)
+    jdbc-postgres (9.3.1102)
+    jdbc-sqlite3 (3.7.2.1)
     journey (1.0.4)
+    jruby-openssl (0.9.5-java)
     json (1.8.1)
+    json (1.8.1-java)
     mail (2.5.4)
       mime-types (~> 1.16)
       treetop (~> 1.4.8)
@@ -103,7 +117,17 @@ GEM
       pg
       rubyntlm
       rubyzip (~> 1.1)
+    metasploit-credential (0.9.0-java)
+      activerecord-jdbcpostgresql-adapter
+      jdbc-postgres
+      metasploit-concern (~> 0.1.0)
+      metasploit-model (~> 0.26.1)
+      metasploit_data_models (~> 0.19.4)
+      rubyntlm
+      rubyzip (~> 1.1)
     metasploit-model (0.26.1)
+      activesupport
+    metasploit-model (0.26.1-java)
       activesupport
     metasploit_data_models (0.19.4)
       activerecord (>= 3.2.13, < 4.0.0)
@@ -112,23 +136,38 @@ GEM
       metasploit-concern (~> 0.1.0)
       metasploit-model (~> 0.26.1)
       pg
+    metasploit_data_models (0.19.4-java)
+      activerecord (>= 3.2.13, < 4.0.0)
+      activerecord-jdbcpostgresql-adapter
+      activesupport
+      arel-helpers
+      jdbc-postgres
+      metasploit-concern (~> 0.1.0)
+      metasploit-model (~> 0.26.1)
     meterpreter_bins (0.0.7)
     method_source (0.8.2)
     mime-types (1.25.1)
     mini_portile (0.6.0)
-    msgpack (0.5.8)
+    msgpack-jruby (1.4.0-java)
     multi_json (1.0.3)
     network_interface (0.0.1)
     nokogiri (1.6.3.1)
       mini_portile (= 0.6.0)
+    nokogiri (1.6.3.1-java)
     packetfu (1.1.9)
     pcaprub (0.11.3)
     pg (0.17.1)
+    pg_jruby (0.14.1.rc2-java)
     polyglot (0.3.5)
     pry (0.10.0)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
+    pry (0.10.0-java)
+      coderay (~> 1.1.0)
+      method_source (~> 0.8.1)
+      slop (~> 3.4)
+      spoon (~> 0.0)
     rack (1.4.5)
     rack-cache (1.2)
       rack (>= 0.4)
@@ -184,12 +223,13 @@ GEM
       simplecov-html (~> 0.5.3)
     simplecov-html (0.5.3)
     slop (3.6.0)
+    spoon (0.0.4)
+      ffi
     sprockets (2.2.2)
       hike (~> 1.2)
       multi_json (~> 1.0)
       rack (~> 1.0)
       tilt (~> 1.1, != 1.3.0)
-    sqlite3 (1.3.9)
     thor (0.19.1)
     tilt (1.4.1)
     timecop (0.7.1)
@@ -202,22 +242,27 @@ GEM
     yard (0.8.7.4)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES
   activerecord (>= 3.0.0, < 4.0.0)
+  activerecord-jdbcsqlite3-adapter
   aruba
   cucumber-rails
   factory_girl (>= 4.1.0)
   factory_girl_rails
   fivemat (= 1.2.1)
+  jruby-openssl
   metasploit-concern (~> 0.1.1)
   metasploit-credential (>= 0.9.0)
   metasploit-framework!
   metasploit_data_models (~> 0.19)
+  msgpack-jruby (>= 1.4.0)
   network_interface (~> 0.0.1)
   pcaprub
   pg (>= 0.11)
+  pg_jruby (>= 0.14.1.rc2.java)
   pry
   rake (>= 10.0.0)
   redcarpet

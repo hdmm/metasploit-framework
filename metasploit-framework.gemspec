@@ -62,8 +62,12 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'metasploit-model', '~> 0.26.1'
   # Needed for Meterpreter on Windows, soon others.
   spec.add_runtime_dependency 'meterpreter_bins', '0.0.7'
+
   # Needed by msfgui and other rpc components
-  spec.add_runtime_dependency 'msgpack'
+  #if RUBY_PLATFORM != "java"
+  #  spec.add_runtime_dependency 'msgpack'
+  #end
+
   # Needed by anemone crawler
   spec.add_runtime_dependency 'nokogiri'
   # Needed by db.rb and Msf::Exploit::Capture
@@ -76,8 +80,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'robots'
   # Needed by some modules
   spec.add_runtime_dependency 'rubyzip', '~> 1.1'
-  # Needed for some post modules
-  spec.add_runtime_dependency 'sqlite3'
   # required for Time::TZInfo in ActiveSupport
   spec.add_runtime_dependency 'tzinfo'
 end
