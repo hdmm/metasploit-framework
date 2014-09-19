@@ -9,3 +9,8 @@ jRuby Compatibility Issues
 * OpenSSL certificate signing throws a null pointer error
   * https://github.com/jruby/jruby/issues?q=is%3Aopen+is%3Aissue+openssl
 * Differences between exception names and constants all over the place
+
+Does it work?
+=============
+
+Nope.
