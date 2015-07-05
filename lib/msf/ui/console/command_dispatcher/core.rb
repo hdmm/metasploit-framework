@@ -3371,7 +3371,7 @@ class Core
 
     # If it's an exploit and a payload is defined, create it and
     # display the payload's options
-    if (mod.exploit? and mod.datastore['PAYLOAD'])
+    if mod.exploit? and mod.datastore['PAYLOAD'] and mod.datastore['PAYLOAD'] != 'automatic'
       p = framework.payloads.create(mod.datastore['PAYLOAD'])
 
       if (!p)
@@ -3409,7 +3409,7 @@ class Core
 
     # If it's an exploit and a payload is defined, create it and
     # display the payload's options
-    if (mod.exploit? and mod.datastore['PAYLOAD'])
+    if mod.exploit? and mod.datastore['PAYLOAD'] and mod.datastore['PAYLOAD'] != 'automatic'
       p = framework.payloads.create(mod.datastore['PAYLOAD'])
 
       if (!p)
@@ -3465,7 +3465,7 @@ class Core
 
     # If it's an exploit and a payload is defined, create it and
     # display the payload's options
-    if (mod.exploit? and mod.datastore['PAYLOAD'])
+    if mod.exploit? and mod.datastore['PAYLOAD'] and mod.datastore['PAYLOAD'] != 'automatic'
       p = framework.payloads.create(mod.datastore['PAYLOAD'])
 
       if (!p)
@@ -3488,7 +3488,7 @@ class Core
 
     # If it's an exploit and a payload is defined, create it and
     # display the payload's options
-    if (mod.exploit? and mod.datastore['PAYLOAD'])
+    if mod.exploit? and mod.datastore['PAYLOAD'] and mod.datastore['PAYLOAD'] != 'automatic'
       p = framework.payloads.create(mod.datastore['PAYLOAD'])
 
       if (!p)

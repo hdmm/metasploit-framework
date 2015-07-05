@@ -569,6 +569,9 @@ class Driver < Msf::Ui::Driver
     case var.downcase
       when "payload"
 
+        # Automatic payload selection should pass through
+        return true if val == "automatic"
+
         if (framework and framework.payloads.valid?(val) == false)
           return false
         elsif (active_module)
