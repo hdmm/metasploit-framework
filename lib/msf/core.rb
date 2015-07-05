@@ -54,6 +54,7 @@ require 'msf/core/session_manager'
 
 # Wrappers
 require 'msf/core/encoded_payload'
+require 'msf/core/deferred_payload'
 
 # Pseudo-modules
 require 'msf/core/handler'
