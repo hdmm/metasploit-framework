@@ -127,7 +127,8 @@ class Metasploit4 < Msf::Auxiliary
     parsed_body = CGI::parse(Rex::Text.decode_base64(request.body) || '')
     vprint_status("Received sniffed browser data over POST:")
     vprint_line("#{parsed_body}.")
-    parsed_body.each { |k, v| profile[k.to_sym] = v.first }
+    parsed_info = js_info_detect_parse(parsed_body)
+    profile[:info] = parsed_info
 
     # Other detections
     profile[:proxy]    = has_proxy?(request)
@@ -137,6 +138,35 @@ class Metasploit4 < Msf::Auxiliary
     profile[:address]    = cli.peerhost
     profile[:module]     = self.fullname
     profile[:created_at] = Time.now
+  end
+
+  # Process the JS object returned by js_info_detect
+  # TODO: Refactor this back into the HTML mixin?
+  def js_info_detect_parse(info)
+    parsed = {}
+    plugins = {}
+    info.each_pair do |k,va|
+      # Ignore duplicate variables in the post
+      v = va.first
+
+      # Skip null and undefined values
+      next if %W{null undefined}.include?(v)
+
+      # Parse the key=value pairs from the javascript
+      case k
+      # Plugins are indexed arrays flatten to key=value pairs
+      when /^plugins_(\d+)_([a-z]+)/
+        pidx, patt = $1, $2
+        plugins[pidx] ||={}
+        plugins[pidx][patt] = v
+      # Everything else is a simple key=value
+      else
+        parsed[k.gsub('_', '.')] = v
+      end
+    end
+
+    parsed['plugins'] = plugins.values
+    parsed
   end
 
   def on_request_uri(cli, req)
@@ -159,7 +189,7 @@ class Metasploit4 < Msf::Auxiliary
     ua_match = fingerprint_user_agent(req['User-Agent'].to_s)
     cookies  = req['Cookie'] || ''
 
-    print_status([req.uri, req.body, peer_addr, self_addr, self_host, self_port, ua_match, cookies].inspect)
+    print_status([req.uri, req.body, peer_addr, self_addr, self_host, self_port, cookies].inspect)
     case req.uri
     when '/', get_resource.chomp("/")
       #
@@ -184,6 +214,7 @@ class Metasploit4 < Msf::Auxiliary
       vprint_status "Info receiver page called."
       process_browser_info(:script, cli, req)
       send_response(cli, '', {'Set-Cookie' => cookie_header(tag)})
+      print_status("Profile: #{browser_profile[retrieve_tag(cli, req)].inspect}")
 
     when /#{@noscript_receiver_page}/
       #
@@ -194,6 +225,7 @@ class Metasploit4 < Msf::Auxiliary
       send_not_found(cli)
 
     when /#{@exploit_receiver_page}/
+      #send_redirect(cli, "/")
       send_not_found(cli)
     end
 

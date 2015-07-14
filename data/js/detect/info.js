@@ -54,7 +54,7 @@ info_detect.basicInfo = function(){
 	  }
 
 	  var capture_date = new Date();
-	  capture_store("time", "time", capture_date.getTime());
+	  capture_store("time", "stamp", capture_date.getTime());
 	  capture_store("time", "offset", capture_date.getTimezoneOffset());
 	  [
 	    "top",
