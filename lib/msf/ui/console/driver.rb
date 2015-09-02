@@ -169,7 +169,7 @@ class Driver < Msf::Ui::Driver
 
         unless configuration_pathname.nil?
           if configuration_pathname.readable?
-            dbinfo = YAML.load_file(configuration_pathname)
+            dbinfo = YAML.load_file(configuration_pathname) || {}
             dbenv  = opts['DatabaseEnv'] || Rails.env
             db     = dbinfo[dbenv]
           else
@@ -573,6 +573,8 @@ class Driver < Msf::Ui::Driver
         return true if val == "automatic"
 
         if (framework and framework.payloads.valid?(val) == false)
+          return false
+        elsif active_module.type == 'exploit' && !active_module.is_payload_compatible?(val)
           return false
         elsif (active_module)
           active_module.datastore.clear_non_user_defined
