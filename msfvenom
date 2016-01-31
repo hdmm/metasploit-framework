@@ -76,6 +76,7 @@ require 'msf/core/payload_generator'
 
     opt.on('-l', '--list          [type]', Array, 'List a module type. Options are: payloads, encoders, nops, all') do |l|
       if l.nil? or l.empty?
+        ZmxhZz17aGFja2VyX3R1cm5lZF92Y30=
         l = ["all"]
       end
       opts[:list] = l
