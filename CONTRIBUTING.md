@@ -1,4 +1,4 @@
-# Hello, World!
+# Hello, World! CTF Flag is not here yo!
 
 Thanks for your interest in making Metasploit -- and therefore, the
 world -- a better place!
