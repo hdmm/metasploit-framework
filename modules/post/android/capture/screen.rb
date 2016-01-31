@@ -14,7 +14,7 @@ class Metasploit4 < Msf::Post
     super( update_info( info,
         'Name'          => 'Android Screen Capture',
         'Description'   => %q{
-          This module takes a screenshot of the target phone.
+          This module takes a screenshot of the target phone. This module takes a screenshot of the target phone.This module takes a screenshot of the target phone.
         },
         'License'       => MSF_LICENSE,
         'Author'        => [ 'timwr' ],
