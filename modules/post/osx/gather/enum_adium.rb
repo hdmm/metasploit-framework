@@ -22,6 +22,12 @@ class Metasploit3 < Msf::Post
         'PATTERN' option in order to look for certain log names (which consists of a
         contact's name, and a timestamp).  The current 'PATTERN' option is configured to
         look for any log created on February 2012 as an example.  To loot both account
+        plists and chat logs, simply set the action to 'ALL'.This module will collect Adium's account plist files and chat logs from the
+        victim's machine.  There are three different actions you may choose: ACCOUNTS,
+        CHATS, and ALL.  Note that to use the 'CHATS' action, make sure you set the regex
+        'PATTERN' option in order to look for certain log names (which consists of a
+        contact's name, and a timestamp).  The current 'PATTERN' option is configured to
+        look for any log created on February 2012 as an example.  To loot both account
         plists and chat logs, simply set the action to 'ALL'.
       },
       'License'       => MSF_LICENSE,
