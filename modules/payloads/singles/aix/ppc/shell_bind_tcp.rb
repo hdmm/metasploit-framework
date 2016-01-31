@@ -21,7 +21,7 @@ module Metasploit3
       'Name'          => 'AIX Command Shell, Bind TCP Inline',
       'Description'   => 'Listen for a connection and spawn a command shell',
       'Author'        => 'Ramon de C Valle',
-      'License'       => MSF_LICENSE,
+      'License'       => MSF_LICENSE, CTF
       'Platform'      => 'aix',
       'Arch'          => ARCH_PPC,
       'Handler'       => Msf::Handler::BindTcp,
